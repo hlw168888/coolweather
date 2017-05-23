@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -69,6 +70,7 @@ public class ChooseAreaFragment extends Fragment {
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -99,31 +101,24 @@ public class ChooseAreaFragment extends Fragment {
                 }
             }
         });
-        super.onActivityCreated(savedInstanceState);
+
+        queryProvinces();
     }
 
 
 
     private void queryFromServer(String address, final  String type) {
-        showProgressDialog();
+        //showProgressDialog();
         HttpUtil.sendOkHttpRequest(address, new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        closeProgressDialog();
-                        Toast.makeText(getContext(),"加载失败",Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String  responseText = response.body().string();
+                System.out.println(type);
+                System.out.println(responseText);
                 boolean result = false;
                 if ("province".equals(type))
                 {
+
                     result = Utility.handleProvinceResponse(responseText);
                 }
                 else  if ("city".equals(type))
@@ -156,6 +151,17 @@ public class ChooseAreaFragment extends Fragment {
                         }
                     });
                 }
+            }
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        closeProgressDialog();
+                        Toast.makeText(getContext(),"加载失败",Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
     }
@@ -217,12 +223,13 @@ public class ChooseAreaFragment extends Fragment {
         {
             int provinceCode = selectedProvince.getProvinceCode();
             String address = "http://guolin.tech/api/china/" + provinceCode;
+
             queryFromServer(address,"city");
         }
     }
 
     private void queryCounties() {
-        titleText.setText(selectedProvince.getProvinceName());
+        titleText.setText(selectedCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
         countyList = DataSupport.where("cityid = ?",String.valueOf(selectedCity.getId())).find(County.class);
         if (countyList.size() > 0)
